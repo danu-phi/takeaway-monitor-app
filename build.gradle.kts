@@ -1,7 +1,10 @@
 // Project level build.gradle.kts
 
 plugins {
-    kotlin("multiplatform") version "1.5.30"
+    id("com.android.application") version "8.1.0" apply false
+    kotlin("android") version "1.9.10" apply false
+    kotlin("jvm") version "1.9.10" apply false
+    id("com.google.dagger.hilt.android") version "2.48" apply false
 }
 
 tasks.register("clean", Delete::class) {
