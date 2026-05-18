@@ -6,10 +6,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 
+import javax.inject.Inject
+import javax.inject.Singleton
+
 /**
  * In-memory fake implementation of [OrderRepository] used for unit tests.
  */
-class FakeOrderRepository : OrderRepository {
+@Singleton
+class FakeOrderRepository @Inject constructor() : OrderRepository {
 
     private val _orders = MutableStateFlow<List<Order>>(emptyList())
 

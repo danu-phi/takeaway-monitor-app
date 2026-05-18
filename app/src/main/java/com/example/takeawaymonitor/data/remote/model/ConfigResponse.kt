@@ -15,7 +15,9 @@ data class ConfigData(
     @SerializedName("available_date") val availableDate: String?,
     @SerializedName("business_hours") val businessHours: BusinessHours?,
     @SerializedName("footer_key") val footerKey: String?,
-    @SerializedName("rounding") val rounding: String?
+    @SerializedName("rounding") val rounding: String?,
+    @SerializedName("listGroupByPax") val listGroupByPax: List<List<Int>>? = null,
+    @SerializedName("isDisplayEmptyGroup") val isDisplayEmptyGroup: String? = null
 )
 
 data class AppIcon(

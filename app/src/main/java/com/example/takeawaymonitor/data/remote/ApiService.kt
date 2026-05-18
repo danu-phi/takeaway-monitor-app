@@ -3,8 +3,12 @@ package com.example.takeawaymonitor.data.remote
 import com.example.takeawaymonitor.data.remote.model.ConfigResponse
 import com.example.takeawaymonitor.data.remote.model.PosConfigResponse
 import com.example.takeawaymonitor.data.remote.model.AppVersionResponse
+import com.example.takeawaymonitor.data.remote.model.MediaResponse
+import com.example.takeawaymonitor.data.remote.model.OrdersResponse
+import com.example.takeawaymonitor.data.remote.model.SystemTimeResponse
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.Query
 
 interface ApiService {
     @GET("system/v1/config")
@@ -17,4 +21,19 @@ interface ApiService {
 
     @GET("system/get_takeaway_monitor_application")
     suspend fun getAppVersion(): AppVersionResponse
+
+    @GET("system/get_time")
+    suspend fun getTime(): SystemTimeResponse
+
+    @GET("system/list_ads_monitor")
+    suspend fun getAdsMonitor(): MediaResponse
+
+    @GET("system/list_orders") // Assuming this is the endpoint for fetchOrders
+    suspend fun getOrders(
+        @Query("timestamp") timestamp: String
+    ): OrdersResponse
+
+    @retrofit2.http.Streaming
+    @GET
+    suspend fun downloadFile(@retrofit2.http.Url url: String): retrofit2.Response<okhttp3.ResponseBody>
 }

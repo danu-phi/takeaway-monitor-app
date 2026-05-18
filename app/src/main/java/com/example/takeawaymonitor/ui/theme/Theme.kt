@@ -1,26 +1,28 @@
 package com.example.takeawaymonitor.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
-private val DarkColorScheme = darkColorScheme()
-private val LightColorScheme = lightColorScheme()
+private val DarkColorScheme = darkColorScheme(
+    primary = RedPH,
+    onPrimary = WhiteText,
+    background = BlackBackground,
+    onBackground = WhiteText,
+    surface = DarkSurface,
+    onSurface = WhiteText,
+    secondary = RedPH,
+    onSecondary = WhiteText,
+    tertiary = GrayText,
+    onTertiary = BlackBackground
+)
 
 @Composable
 fun TakeawayMonitorTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
-
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = DarkColorScheme,
         content = content
     )
 }
