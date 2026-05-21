@@ -16,7 +16,7 @@ data class ConfigData(
     @SerializedName("business_hours") val businessHours: BusinessHours?,
     @SerializedName("footer_key") val footerKey: String?,
     @SerializedName("rounding") val rounding: String?,
-    @SerializedName("listGroupByPax") val listGroupByPax: List<List<Int>>? = null,
+    @SerializedName("group_by_pax") val listGroupByPax: List<List<Int>>? = null,
     @SerializedName("isDisplayEmptyGroup") val isDisplayEmptyGroup: String? = null
 )
 

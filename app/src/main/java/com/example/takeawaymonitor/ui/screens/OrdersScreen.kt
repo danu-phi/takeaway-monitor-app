@@ -291,6 +291,7 @@ fun CustomerQueueItemView(data: CustomerQueueData) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .background(Color.White.copy(alpha = 0.1f))
             .height(60.dp),
         contentAlignment = Alignment.Center
     ) {

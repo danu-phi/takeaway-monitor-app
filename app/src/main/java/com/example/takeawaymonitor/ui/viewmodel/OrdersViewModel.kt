@@ -317,7 +317,7 @@ class OrdersViewModel @Inject constructor(
     private fun filterCustomerQueueForDisplay(allQueue: List<CustomerQueueData>): List<CustomerQueueItem> {
         val result = mutableListOf<CustomerQueueItem>()
         val listItem = ArrayList(allQueue)
-        val config = preferenceManager.getConfig()
+        val config = preferenceManager.getPosConfig()
 
         if (config?.listGroupByPax != null) {
             val listRemoveItem = ArrayList<CustomerQueueData>()

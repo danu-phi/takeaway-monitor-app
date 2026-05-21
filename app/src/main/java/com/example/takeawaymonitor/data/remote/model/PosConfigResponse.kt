@@ -18,8 +18,10 @@ data class PosConfigData(
     @SerializedName("takeaway_time") val takeawayTime: String?,
     @SerializedName("store_branch") val storeBranch: String?,
     @SerializedName("outlet_logo") val outletLogo: String?,
+    @SerializedName("group_by_pax") val listGroupByPax: List<List<Int>>?,
     @SerializedName("store_type") val storeType: String?,
-    @SerializedName("tax_rate") val taxRate: String?
+    @SerializedName("tax_rate") val taxRate: String?,
+    @SerializedName("is_display_empty_group") var isDisplayEmptyGroup: String?
 )
 
 data class PosUI(
