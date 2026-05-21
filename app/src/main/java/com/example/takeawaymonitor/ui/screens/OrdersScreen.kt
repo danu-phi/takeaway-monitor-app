@@ -191,20 +191,12 @@ fun HeaderSection(backgroundColor: Color, serverTime: Date?) {
                 contentAlignment = Alignment.Center
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        shape = CircleShape,
-                        color = Color.White,
-                        modifier = Modifier.size(45.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Default.ShoppingCart,
-                                contentDescription = null,
-                                tint = Color.Black,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-                    }
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_takeaway_order),
+                        contentDescription = null,
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(56.dp)
+                    )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = "TAKEAWAY ORDER",
@@ -221,20 +213,12 @@ fun HeaderSection(backgroundColor: Color, serverTime: Date?) {
                 contentAlignment = Alignment.Center
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        shape = CircleShape,
-                        color = Color.Red,
-                        modifier = Modifier.size(45.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Default.Notifications,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-                    }
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_waiting_list),
+                        contentDescription = null,
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(56.dp)
+                    )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = "WAITING LIST",
