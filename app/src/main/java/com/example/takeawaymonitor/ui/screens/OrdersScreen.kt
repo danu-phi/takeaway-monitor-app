@@ -11,6 +11,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -34,6 +35,7 @@ import coil.compose.AsyncImage
 import com.example.takeawaymonitor.R
 import com.example.takeawaymonitor.data.remote.model.Ad
 import com.example.takeawaymonitor.data.remote.model.OrderedData
+import com.example.takeawaymonitor.data.remote.model.CustomerQueueData
 import com.example.takeawaymonitor.util.Utils.isYouTubeLink
 import com.example.takeawaymonitor.ui.viewmodel.CustomerQueueItem
 import com.example.takeawaymonitor.ui.viewmodel.OrdersViewModel
@@ -108,54 +110,54 @@ fun OrdersScreenContent(
             HeaderSection(headerBackground, serverTime)
 
             // Main Content Row
+            val hasOrders = apiOrders.any { it.orderStatusId == "1" || it.orderStatusId == "2" }
+            val hasQueue = customerQueueItems.any { it is CustomerQueueItem.Order }
+            val showData = hasOrders || hasQueue
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
             ) {
-                // 1. Orders Section (Takeaway Order) - Weight 1
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                ) {
-                    ListHeader("TAKEAWAY ORDER")
-                    ApiOrdersList(
-                        orders = apiOrders.filter { it.orderStatusId == "1" || it.orderStatusId == "2" }, // Pending/Preparing
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                // Divider
-                Box(modifier = Modifier.width(1.dp).fillMaxHeight().background(Color.DarkGray))
-
-                // 2. Customer Queue Section - Weight 1
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                ) {
-                    ListHeader("CUSTOMER QUEUE")
-                    CustomerQueueList(
-                        items = customerQueueItems,
-                        modifier = Modifier.weight(1f)
-                    )
-                    
-                    // Version display at bottom
-                    Text(
-                        text = "v1.0.0",
-                        color = Color.LightGray,
-                        fontSize = 12.sp,
-                        modifier = Modifier.padding(8.dp).align(Alignment.End)
-                    )
-                }
-
-                // 3. Media Section - Weight 1.3
-                if (ads.isNotEmpty()) {
+                if (showData) {
+                    // 1. Orders Section (Takeaway Order) - Weight 1
                     Column(
                         modifier = Modifier
-                            .weight(1.3f)
+                            .weight(1f)
                             .fillMaxHeight()
+                    ) {
+                        ListHeaderRow("Customer", "Order Status")
+                        ApiOrdersList(
+                            orders = apiOrders.filter { it.orderStatusId == "1" || it.orderStatusId == "2" }, // Pending/Preparing
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    // 2. Customer Queue Section - Weight 1
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                    ) {
+                        ListHeaderRow("Customer", null)
+                        CustomerQueueList(
+                            items = customerQueueItems,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        // Version display at bottom
+                        Text(
+                            text = "Version 2.0.5",
+                            color = Color.LightGray,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(8.dp).align(Alignment.End)
+                        )
+                    }
+                } else if (ads.isNotEmpty()) {
+                    // 3. Media Section - Full Width (Weight 1)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
                             .background(Color.Black)
                     ) {
                         MediaSection(ads)
@@ -177,7 +179,7 @@ fun HeaderSection(backgroundColor: Color, serverTime: Date?) {
         modifier = Modifier
             .fillMaxWidth()
             .height(80.dp)
-            .background(backgroundColor)
+            .background(Color.Black.copy(alpha = 0.6f))
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
@@ -189,42 +191,56 @@ fun HeaderSection(backgroundColor: Color, serverTime: Date?) {
                 contentAlignment = Alignment.Center
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.ShoppingCart,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(40.dp)
-                    )
+                    Surface(
+                        shape = CircleShape,
+                        color = Color.White,
+                        modifier = Modifier.size(45.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.ShoppingCart,
+                                contentDescription = null,
+                                tint = Color.Black,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = "TAKEAWAY ORDER",
                         color = Color.White,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 24.sp,
-                        letterSpacing = 2.sp
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp
                     )
                 }
             }
 
-            // Right Half: Customer Queue
+            // Right Half: Waiting List
             Box(
                 modifier = Modifier.weight(1f).fillMaxHeight(),
                 contentAlignment = Alignment.Center
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Notifications,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(48.dp)
-                    )
+                    Surface(
+                        shape = CircleShape,
+                        color = Color.Red,
+                        modifier = Modifier.size(45.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "CUSTOMER QUEUE",
+                        text = "WAITING LIST",
                         color = Color.White,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 24.sp,
-                        letterSpacing = 2.sp
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp
                     )
                 }
             }
@@ -242,15 +258,11 @@ fun HeaderSection(backgroundColor: Color, serverTime: Date?) {
         )
         
         // Logo in the absolute center
-        Surface(
-            modifier = Modifier.align(Alignment.Center).size(60.dp),
-            color = Color.Transparent
-        ) {
-            // Placeholder for logo
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                // Image(...)
-            }
-        }
+        Image(
+            painter = painterResource(id = R.drawable.logo_pizzahut), // Make sure this resource exists or use a placeholder
+            contentDescription = "Logo",
+            modifier = Modifier.align(Alignment.Center).size(120.dp)
+        )
     }
 }
 
@@ -258,8 +270,7 @@ fun HeaderSection(backgroundColor: Color, serverTime: Date?) {
 fun CustomerQueueList(items: List<CustomerQueueItem>, modifier: Modifier = Modifier) {
     LazyColumn(
         modifier = modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        contentPadding = PaddingValues(0.dp)
     ) {
         items(items.size) { index ->
             when (val item = items[index]) {
@@ -267,7 +278,7 @@ fun CustomerQueueList(items: List<CustomerQueueItem>, modifier: Modifier = Modif
                     QueueGroupHeader(item.title)
                 }
                 is CustomerQueueItem.Order -> {
-                    ApiOrderItem(item.data, index + 1)
+                    CustomerQueueItemView(item.data)
                 }
             }
         }
@@ -275,22 +286,51 @@ fun CustomerQueueList(items: List<CustomerQueueItem>, modifier: Modifier = Modif
 }
 
 @Composable
-fun QueueGroupHeader(title: String) {
-    Surface(
-        color = Color.DarkGray.copy(alpha = 0.5f),
-        shape = RoundedCornerShape(4.dp),
+fun CustomerQueueItemView(data: CustomerQueueData) {
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
+            .height(60.dp),
+        contentAlignment = Alignment.Center
     ) {
         Text(
-            text = title,
-            modifier = Modifier.padding(8.dp),
-            color = Color.Yellow,
+            text = data.customerName ?: "",
+            color = Color.White,
             fontWeight = FontWeight.Bold,
-            fontSize = 18.sp,
+            fontSize = 28.sp,
             textAlign = TextAlign.Center
         )
+    }
+}
+
+@Composable
+fun QueueGroupHeader(title: String) {
+    Surface(
+        color = Color.White.copy(alpha = 0.05f),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(45.dp)
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Text(
+                text = title,
+                modifier = Modifier.padding(start = 16.dp),
+                color = Color.LightGray,
+                fontWeight = FontWeight.Normal,
+                fontSize = 18.sp
+            )
+            // Bottom Divider for the header
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(Color.White.copy(alpha = 0.1f))
+                    .align(Alignment.BottomCenter)
+            )
+        }
     }
 }
 
@@ -324,7 +364,7 @@ fun ApiOrderItem(order: OrderedData, displayIndex: Int) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = order.code ?: displayIndex.toString(),
+                text = order.name+" - "+order.orderStatusId,
                 color = if (order.orderStatusId == "3") Color.Green else Color.White,
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 48.sp,
@@ -335,18 +375,34 @@ fun ApiOrderItem(order: OrderedData, displayIndex: Int) {
 }
 
 @Composable
-fun ListHeader(title: String) {
+fun ListHeaderRow(leftTitle: String, rightTitle: String?) {
     Surface(
-        color = Color.Gray.copy(alpha = 0.3f),
+        color = Color.Gray.copy(alpha = 0.4f),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Text(
-            text = title,
-            modifier = Modifier.padding(16.dp),
-            color = Color.White,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = leftTitle,
+                modifier = Modifier.weight(1f),
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp
+            )
+            if (rightTitle != null) {
+                Text(
+                    text = rightTitle,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp,
+                    textAlign = TextAlign.End
+                )
+            }
+        }
     }
 }
 
@@ -459,18 +515,12 @@ fun OrdersScreenPreview() {
 
     val sampleApiOrders = listOf(
         OrderedData(id = "1", code = "A101", orderStatusId = "1"),
-        OrderedData(id = "2", code = "A102", orderStatusId = "2"),
-        OrderedData(id = "3", code = "B201", orderStatusId = "3", capacity = "2"),
-        OrderedData(id = "4", code = "B202", orderStatusId = "3", capacity = "2"),
-        OrderedData(id = "5", code = "C301", orderStatusId = "3", capacity = "4")
+        OrderedData(id = "2", code = "A102", orderStatusId = "2")
     )
 
     val sampleCustomerQueueItems = listOf(
         CustomerQueueItem.Header("2-3", listOf(2, 3)),
-        CustomerQueueItem.Order(sampleApiOrders[2]),
-        CustomerQueueItem.Order(sampleApiOrders[3]),
-        CustomerQueueItem.Header("4-5", listOf(4, 5)),
-        CustomerQueueItem.Order(sampleApiOrders[4]),
+        CustomerQueueItem.Order(CustomerQueueData(id = "3", customerName = "Najwa", capacity = "8")),
         CustomerQueueItem.Header("Group", emptyList())
     )
 

@@ -10,6 +10,7 @@ import com.example.takeawaymonitor.data.model.OrderStatus
 import com.example.takeawaymonitor.data.remote.ApiService
 import com.example.takeawaymonitor.data.remote.model.Ad
 import com.example.takeawaymonitor.data.remote.model.OrderedData
+import com.example.takeawaymonitor.data.remote.model.CustomerQueueData
 import com.example.takeawaymonitor.data.remote.model.SystemTimeData
 import com.example.takeawaymonitor.data.repository.OrderRepository
 import com.example.takeawaymonitor.util.Utils.isYouTubeLink
@@ -47,7 +48,7 @@ data class OrdersUiState(
 
 sealed class CustomerQueueItem {
     data class Header(val title: String, val paxList: List<Int>) : CustomerQueueItem()
-    data class Order(val data: OrderedData) : CustomerQueueItem()
+    data class Order(val data: CustomerQueueData) : CustomerQueueItem()
 }
 
 @HiltViewModel
@@ -166,7 +167,7 @@ class OrdersViewModel @Inject constructor(
             try {
                 val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
                 val timestampStr = sdf.format(timestamp)
-                val response = apiService.getOrders(timestampStr)
+                val response = apiService.getOrders()
                 
                 val orders = response.orderData?.orderDetail
                 val filteredOrders = orders?.filter {
@@ -192,8 +193,7 @@ class OrdersViewModel @Inject constructor(
 
                 _uiState.update { 
                     it.copy(
-                        apiOrders = filteredOrders ?: emptyList(),
-                        customerQueueItems = filterCustomerQueueForDisplay(filteredOrders ?: emptyList())
+                        apiOrders = filteredOrders ?: emptyList()
                     )
                 }
             } catch (e: Exception) {
@@ -267,11 +267,32 @@ class OrdersViewModel @Inject constructor(
         clockJob?.cancel()
         val calendar = Calendar.getInstance().apply { time = baseDate }
         clockJob = viewModelScope.launch {
+            var counter = 0
             while (true) {
                 _uiState.update { it.copy(serverTime = calendar.time) }
                 delay(1000)
                 calendar.add(Calendar.SECOND, 1)
-                Log.d("OrdersViewModel", "system time interval: ${calendar.time}")
+                counter++
+                
+                // Fetch customer queue every 10 seconds (adjust as needed)
+                if (counter % 10 == 0) {
+                    fetchCustomerQueue()
+                }
+            }
+        }
+    }
+
+    private fun fetchCustomerQueue() {
+        viewModelScope.launch {
+            try {
+                val response = apiService.getCustomerQueue()
+                response.data?.let { queueDataList ->
+                    _uiState.update { 
+                        it.copy(customerQueueItems = filterCustomerQueueForDisplay(queueDataList))
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("OrdersViewModel", "Error fetching customer queue: ${e.message}")
             }
         }
     }
@@ -280,14 +301,13 @@ class OrdersViewModel @Inject constructor(
         _uiState.update { it.copy(timeFetchError = null) }
     }
 
-    private fun filterCustomerQueueForDisplay(allOrders: List<OrderedData>): List<CustomerQueueItem> {
-        val readyOrders = allOrders.filter { it.orderStatusId == "3" }
+    private fun filterCustomerQueueForDisplay(allQueue: List<CustomerQueueData>): List<CustomerQueueItem> {
         val result = mutableListOf<CustomerQueueItem>()
-        val listItem = ArrayList(readyOrders)
+        val listItem = ArrayList(allQueue)
         val config = preferenceManager.getConfig()
 
         if (config?.listGroupByPax != null) {
-            val listRemoveItem = ArrayList<OrderedData>()
+            val listRemoveItem = ArrayList<CustomerQueueData>()
             for (paxGroup in config.listGroupByPax) {
                 var limit = 2
                 result.add(CustomerQueueItem.Header(paxGroup.joinToString(separator = "-"), paxGroup))
@@ -317,7 +337,7 @@ class OrdersViewModel @Inject constructor(
             }
         } else {
             // Default behavior if no grouping config
-            return readyOrders.map { CustomerQueueItem.Order(it) }
+            return allQueue.map { CustomerQueueItem.Order(it) }
         }
 
         if (result.isEmpty()) return emptyList()

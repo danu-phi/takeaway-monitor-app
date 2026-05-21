@@ -6,6 +6,7 @@ import com.example.takeawaymonitor.data.remote.model.AppVersionResponse
 import com.example.takeawaymonitor.data.remote.model.MediaResponse
 import com.example.takeawaymonitor.data.remote.model.OrdersResponse
 import com.example.takeawaymonitor.data.remote.model.SystemTimeResponse
+import com.example.takeawaymonitor.data.remote.model.CustomerQueueResponse
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Query
@@ -28,10 +29,11 @@ interface ApiService {
     @GET("system/list_ads_monitor")
     suspend fun getAdsMonitor(): MediaResponse
 
-    @GET("system/list_orders") // Assuming this is the endpoint for fetchOrders
-    suspend fun getOrders(
-        @Query("timestamp") timestamp: String
-    ): OrdersResponse
+    @GET("order/list_takeaway_monitor")
+    suspend fun getOrders(): OrdersResponse
+
+    @GET("customer/list_customer_queue")
+    suspend fun getCustomerQueue(): CustomerQueueResponse
 
     @retrofit2.http.Streaming
     @GET

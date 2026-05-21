@@ -52,7 +52,11 @@ data class OrderedData(
     @Expose
     var capacity: String? = "0",
 
-    var orderNo: Int = 0
+    var orderNo: Int = 0,
+
+    @SerializedName("name")
+    @Expose
+    var name: String? = "",
 )
 
 data class OrderDetail(
