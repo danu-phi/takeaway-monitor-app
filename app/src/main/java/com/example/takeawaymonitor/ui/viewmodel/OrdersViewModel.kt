@@ -13,6 +13,8 @@ import com.example.takeawaymonitor.data.remote.model.OrderedData
 import com.example.takeawaymonitor.data.remote.model.CustomerQueueData
 import com.example.takeawaymonitor.data.remote.model.SystemTimeData
 import com.example.takeawaymonitor.data.repository.OrderRepository
+import com.example.takeawaymonitor.util.Constants
+import com.example.takeawaymonitor.util.Utils
 import com.example.takeawaymonitor.util.Utils.isYouTubeLink
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -43,7 +45,8 @@ data class OrdersUiState(
     val errorMessage: String? = null,
     val systemTime: SystemTimeData? = null,
     val serverTime: Date? = null,
-    val timeFetchError: String? = null
+    val timeFetchError: String? = null,
+    val outletLogoPath: String? = null
 )
 
 sealed class CustomerQueueItem {
@@ -65,6 +68,16 @@ class OrdersViewModel @Inject constructor(
     private var clockJob: Job? = null
 
     init {
+        val posConfig = preferenceManager.getPosConfig()
+        val logoUrl = posConfig?.outletLogo
+        val logoPath = if (!logoUrl.isNullOrEmpty()) {
+            val fileName = Utils.getFileNameFromUrl(logoUrl)
+            val file = File(context.filesDir, "${Constants.LOGO_FOLDER}/$fileName")
+            if (file.exists()) file.absolutePath else null
+        } else null
+
+        _uiState.update { it.copy(outletLogoPath = logoPath) }
+
         observeOrders()
         fetchSystemTime()
         fetchMedia()

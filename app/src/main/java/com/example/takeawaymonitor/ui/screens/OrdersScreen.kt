@@ -38,6 +38,7 @@ import com.example.takeawaymonitor.data.remote.model.OrderedData
 import com.example.takeawaymonitor.data.remote.model.CustomerQueueData
 import com.example.takeawaymonitor.util.Utils.isYouTubeLink
 import com.example.takeawaymonitor.ui.viewmodel.CustomerQueueItem
+import com.example.takeawaymonitor.util.Utils.getVersion
 import com.example.takeawaymonitor.ui.viewmodel.OrdersViewModel
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.takeawaymonitor.ui.theme.TakeawayMonitorTheme
@@ -52,12 +53,16 @@ fun OrdersScreen(
     viewModel: OrdersViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    val versionName = remember { getVersion(context) }
 
     OrdersScreenContent(
         apiOrders = uiState.apiOrders,
         customerQueueItems = uiState.customerQueueItems,
         ads = uiState.ads,
         serverTime = uiState.serverTime,
+        outletLogoPath = uiState.outletLogoPath,
+        versionName = versionName,
         timeFetchError = uiState.timeFetchError,
         onDismissTimeError = { viewModel.dismissTimeError() },
         onConfirmTimeError = {
@@ -73,6 +78,8 @@ fun OrdersScreenContent(
     customerQueueItems: List<CustomerQueueItem>,
     ads: List<Ad>,
     serverTime: Date?,
+    outletLogoPath: String?,
+    versionName: String,
     timeFetchError: String?,
     onDismissTimeError: () -> Unit,
     onConfirmTimeError: () -> Unit
@@ -107,7 +114,7 @@ fun OrdersScreenContent(
             modifier = Modifier.fillMaxSize()
         ) {
             // Top Header Section
-            HeaderSection(headerBackground, serverTime)
+            HeaderSection(headerBackground, serverTime, outletLogoPath)
 
             // Main Content Row
             val hasOrders = apiOrders.any { it.orderStatusId == "1" || it.orderStatusId == "2" }
@@ -147,7 +154,7 @@ fun OrdersScreenContent(
 
                         // Version display at bottom
                         Text(
-                            text = "Version 2.0.5",
+                            text = "Version $versionName",
                             color = Color.LightGray,
                             fontSize = 12.sp,
                             modifier = Modifier.padding(8.dp).align(Alignment.End)
@@ -169,7 +176,7 @@ fun OrdersScreenContent(
 }
 
 @Composable
-fun HeaderSection(backgroundColor: Color, serverTime: Date?) {
+fun HeaderSection(backgroundColor: Color, serverTime: Date?, outletLogoPath: String?) {
     val displayTime = remember(serverTime) {
         val date = serverTime ?: Date()
         SimpleDateFormat("HH:mm", Locale.getDefault()).format(date)
@@ -242,11 +249,21 @@ fun HeaderSection(backgroundColor: Color, serverTime: Date?) {
         )
         
         // Logo in the absolute center
-        Image(
-            painter = painterResource(id = R.drawable.logo_pizzahut), // Make sure this resource exists or use a placeholder
-            contentDescription = "Logo",
-            modifier = Modifier.align(Alignment.Center).size(120.dp)
-        )
+        if (outletLogoPath != null) {
+            AsyncImage(
+                model = File(outletLogoPath),
+                contentDescription = "Outlet Logo",
+                modifier = Modifier.align(Alignment.Center).size(200.dp),
+                contentScale = ContentScale.Fit
+            )
+        } else {
+            // Fallback to static resource if local file not found
+            Image(
+                painter = painterResource(id = R.drawable.logo_pizzahut),
+                contentDescription = "Logo",
+                modifier = Modifier.align(Alignment.Center).size(120.dp)
+            )
+        }
     }
 }
 
@@ -514,6 +531,8 @@ fun OrdersScreenPreview() {
             customerQueueItems = sampleCustomerQueueItems,
             ads = sampleAds,
             serverTime = Date(),
+            outletLogoPath = null,
+            versionName = "2.0.5",
             timeFetchError = null,
             onDismissTimeError = {},
             onConfirmTimeError = {}

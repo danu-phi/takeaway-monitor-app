@@ -10,6 +10,7 @@ import com.example.takeawaymonitor.data.remote.model.ConfigResponse
 import com.example.takeawaymonitor.data.remote.model.PosConfigResponse
 import com.example.takeawaymonitor.data.remote.model.AppVersionResponse
 import com.example.takeawaymonitor.data.remote.model.VersionData
+import com.example.takeawaymonitor.util.Constants
 import com.example.takeawaymonitor.util.StringUtil
 import com.example.takeawaymonitor.util.Utils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.net.URL
 import java.security.SecureRandom
 import java.security.cert.CertificateException
@@ -134,6 +136,8 @@ class MainViewModel @Inject constructor(
                 return true
             } else {
                 _isUpdateAvailable.value = false
+                val outletLogo = preferenceManager.getPosConfig()?.outletLogo
+                downloadlogo(outletLogo)
                 viewModelScope.launch {
                     _navigateToOrders.emit(Unit)
                 }
@@ -143,6 +147,33 @@ class MainViewModel @Inject constructor(
             Toast.makeText(context, "There're some errors when check app version!", Toast.LENGTH_SHORT).show()
             println("There're some errors when check app version!: ${ex.message}")
             return false
+        }
+    }
+
+    private fun downloadlogo(outletLogo: String?) {
+        if (outletLogo.isNullOrEmpty()) return
+        val fallbackUrl = if (outletLogo.contains("https://ph_posmanager")) {
+            outletLogo.replace("https://ph_posmanager", "https://ph-posmanager")
+        } else
+            outletLogo
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val response = apiService.downloadFile(fallbackUrl)
+                if (response.isSuccessful) {
+                    val body = response.body()
+                    if (body != null) {
+                        val folderPath = "${context.filesDir.absolutePath}/${Constants.LOGO_FOLDER}"
+                        val fileName = Utils.getFileNameFromUrl(fallbackUrl)
+                        Utils.saveInputStreamToFile(body.byteStream(), folderPath, fileName)
+                        println("Logo downloaded and saved successfully to $folderPath/$fileName")
+                    }
+                } else {
+                    println("Failed to download logo: ${response.message()}")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("Error downloading logo: ${e.message}")
+            }
         }
     }
 
@@ -158,10 +189,9 @@ class MainViewModel @Inject constructor(
             } catch (e: Exception) {
                 try {
                     val fallbackUrl = if (downloadUrl.contains("https://ph-posmanager")) {
-                        downloadUrl.replace("https://ph-posmanager", "https://ph_posmanager")
-                    } else {
                         downloadUrl.replace("https://ph_posmanager", "https://ph-posmanager")
-                    }
+                    } else
+                        downloadUrl
                     val size = calculateFileSize(fallbackUrl)
                     withContext(Dispatchers.Main) {
                         fileSize = size

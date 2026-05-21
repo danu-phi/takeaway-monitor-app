@@ -2,6 +2,9 @@ package com.example.takeawaymonitor.util
 
 import android.content.Context
 import android.content.pm.PackageManager
+import java.io.File
+import java.io.FileOutputStream
+import java.io.InputStream
 
 object Utils {
     fun getVersion(context: Context): String {
@@ -26,5 +29,20 @@ object Utils {
         } else {
             str
         }
+    }
+
+    fun saveInputStreamToFile(inputStream: InputStream, folderPath: String, fileName: String) {
+        val folder = File(folderPath)
+        if (!folder.exists()) {
+            folder.mkdirs()
+        }
+        val file = File(folder, fileName)
+        FileOutputStream(file).use { output ->
+            inputStream.copyTo(output)
+        }
+    }
+
+    fun getFileNameFromUrl(url: String): String {
+        return url.substringAfterLast("/")
     }
 }
