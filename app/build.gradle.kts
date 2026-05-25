@@ -3,14 +3,15 @@ plugins {
     kotlin("android")
     kotlin("kapt")
     id("com.google.dagger.hilt.android")
+    id("com.google.gms.google-services")
 }
 
 android {
-    namespace = "com.example.takeawaymonitor"
+    namespace = "com.phsmk.id.takeaway_monitor"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.takeawaymonitor"
+        applicationId = "com.phsmk.id.takeaway_monitor"
         minSdk = 21
         targetSdk = 34
         versionCode = 61
@@ -23,6 +24,15 @@ android {
         getByName("release") {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+
+    applicationVariants.all {
+        val variant = this
+        variant.outputs.all {
+            val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            output.outputFileName = "new-takeaway-monitor-${variant.versionName}.apk"
         }
     }
 
@@ -40,7 +50,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.3"
+        kotlinCompilerExtensionVersion = "1.5.14"
     }
 }
 
@@ -62,6 +72,11 @@ dependencies {
     kapt("androidx.room:room-compiler:2.5.2")
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+
+    // Firebase
+    implementation(platform("com.google.firebase:firebase-bom:33.1.1"))
+    implementation("com.google.firebase:firebase-analytics")
 
     // Image & Video
     implementation("io.coil-kt:coil-compose:2.4.0")

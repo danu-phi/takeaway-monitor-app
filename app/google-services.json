@@ -1,0 +1,200 @@
+{
+  "project_info": {
+    "project_number": "144235997121",
+    "project_id": "order-taker-uat",
+    "storage_bucket": "order-taker-uat.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:144235997121:android:084098e9d4ccb81415f140",
+        "android_client_info": {
+          "package_name": "com.diqit.phr.entry"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqavxE-CZU1SYSJ6g0URTl8hWHJ6Rq2Wg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:144235997121:android:11599f7050e38bf715f140",
+        "android_client_info": {
+          "package_name": "com.diqit.phr.entry.dev"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqavxE-CZU1SYSJ6g0URTl8hWHJ6Rq2Wg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:144235997121:android:fc4d3f82fdfd1d3c15f140",
+        "android_client_info": {
+          "package_name": "com.diqit.phr.ledmenu"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqavxE-CZU1SYSJ6g0URTl8hWHJ6Rq2Wg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:144235997121:android:6e2715cf6741b68d15f140",
+        "android_client_info": {
+          "package_name": "com.diqit.phr.takeaway_monitor"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqavxE-CZU1SYSJ6g0URTl8hWHJ6Rq2Wg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:144235997121:android:5020372e591e68bc15f140",
+        "android_client_info": {
+          "package_name": "com.diqit.phr.takeaway_monitor.dev"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqavxE-CZU1SYSJ6g0URTl8hWHJ6Rq2Wg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:144235997121:android:49e6d1eb8045433f15f140",
+        "android_client_info": {
+          "package_name": "com.diqit.phr.taker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqavxE-CZU1SYSJ6g0URTl8hWHJ6Rq2Wg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:144235997121:android:9395d6be53f13caa15f140",
+        "android_client_info": {
+          "package_name": "com.diqit.phr.taker.dev"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqavxE-CZU1SYSJ6g0URTl8hWHJ6Rq2Wg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:144235997121:android:498d2790a8ea122415f140",
+        "android_client_info": {
+          "package_name": "com.phid.drivertracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqavxE-CZU1SYSJ6g0URTl8hWHJ6Rq2Wg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:144235997121:android:8482da35b40653b115f140",
+        "android_client_info": {
+          "package_name": "com.phid.drivertracker.dev"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqavxE-CZU1SYSJ6g0URTl8hWHJ6Rq2Wg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:144235997121:android:a0ef919f4736f83315f140",
+        "android_client_info": {
+          "package_name": "com.phsmk.id.takeaway_monitor"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqavxE-CZU1SYSJ6g0URTl8hWHJ6Rq2Wg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
