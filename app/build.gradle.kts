@@ -72,7 +72,21 @@ dependencies {
     kapt("androidx.room:room-compiler:2.5.2")
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.retrofit2:adapter-rxjava2:2.9.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+
+    // Socket.io
+    implementation("io.socket:socket.io-client:2.1.0")
+
+    // RxJava
+    implementation("io.reactivex.rxjava2:rxjava:2.2.21")
+    implementation("io.reactivex.rxjava2:rxandroid:2.1.1")
+
+    // Logging
+    implementation("com.jakewharton.timber:timber:5.0.1")
+
+    // Utils
+    implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
 
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:33.1.1"))

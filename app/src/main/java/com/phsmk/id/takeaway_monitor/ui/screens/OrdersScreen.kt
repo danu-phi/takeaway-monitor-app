@@ -1,5 +1,11 @@
 package com.phsmk.id.takeaway_monitor.ui.screens
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.phsmk.id.takeaway_monitor.service.PushService
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -42,6 +48,7 @@ import com.phsmk.id.takeaway_monitor.ui.viewmodel.CustomerQueueItem
 import com.phsmk.id.takeaway_monitor.util.Utils.getVersion
 import com.phsmk.id.takeaway_monitor.ui.viewmodel.OrdersViewModel
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance
 import com.phsmk.id.takeaway_monitor.ui.theme.TakeawayMonitorTheme
 import java.io.File
 import java.text.SimpleDateFormat
@@ -56,6 +63,40 @@ fun OrdersScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val versionName = remember { getVersion(context) }
+
+    DisposableEffect(context) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                when (intent.action) {
+                    PushService.ACTION_SEND_CREATED,
+                    PushService.ACTION_SEND_UPDATED -> {
+                        val orderDetail = intent.getParcelableExtra<OrderedData>(PushService.EXT_ORDER_DETAIL)
+                        orderDetail?.let { viewModel.onOrderReceived(intent.action!!, it) }
+                    }
+                    PushService.ACTION_CUSTOMER_QUEUE_CREATED,
+                    PushService.ACTION_CUSTOMER_QUEUE_UPDATED -> {
+                        val queueData = intent.getParcelableExtra<CustomerQueueData>(PushService.EXT_CUSTOMER_QUEUE_DETAIL)
+                        queueData?.let { viewModel.onCustomerQueueReceived(intent.action!!, it) }
+                    }
+                    PushService.ACTION_CUSTOMER_QUEUE_DELETED -> {
+                        val customerQueueId = intent.getIntExtra(PushService.EXT_CUSTOMER_QUEUE_DETAIL, 0)
+                        viewModel.onCustomerQueueDeleted(customerQueueId)
+                    }
+                }
+            }
+        }
+        val filter = IntentFilter().apply {
+            addAction(PushService.ACTION_SEND_CREATED)
+            addAction(PushService.ACTION_SEND_UPDATED)
+            addAction(PushService.ACTION_CUSTOMER_QUEUE_CREATED)
+            addAction(PushService.ACTION_CUSTOMER_QUEUE_UPDATED)
+            addAction(PushService.ACTION_CUSTOMER_QUEUE_DELETED)
+        }
+        getInstance(context).registerReceiver(receiver, filter)
+        onDispose {
+            getInstance(context).unregisterReceiver(receiver)
+        }
+    }
 
     OrdersScreenContent(
         apiOrders = uiState.apiOrders,

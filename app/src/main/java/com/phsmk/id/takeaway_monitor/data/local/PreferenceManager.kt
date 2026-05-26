@@ -17,11 +17,30 @@ class PreferenceManager @Inject constructor(
 ) {
     private val prefs: SharedPreferences = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
 
+    init {
+        instance = this
+    }
+
     companion object {
+        lateinit var instance: PreferenceManager
+            private set
+
         private const val KEY_CONFIG_DATA = "key_config_data"
         private const val KEY_POS_CONFIG_DATA = "key_pos_config_data"
         private const val KEY_APP_VERSION_DATA = "key_app_version_data"
+        private const val KEY_USER_TOKEN = "key_user_token"
+        private const val KEY_EDITING_ORDER_ID = "key_editing_order_id"
     }
+
+    var userToken: String?
+        get() = prefs.getString(KEY_USER_TOKEN, null)
+        set(value) = prefs.edit().putString(KEY_USER_TOKEN, value).apply()
+
+    var editingOrderId: String?
+        get() = prefs.getString(KEY_EDITING_ORDER_ID, null)
+        set(value) = prefs.edit().putString(KEY_EDITING_ORDER_ID, value).apply()
+
+    fun configData(): ConfigData = getConfig() ?: ConfigData(null, null, null, null, null, null, null)
 
     fun saveConfig(config: ConfigData) {
         val json = gson.toJson(config)

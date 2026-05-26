@@ -1,15 +1,12 @@
 package com.phsmk.id.takeaway_monitor.data.remote
 
-import com.phsmk.id.takeaway_monitor.data.remote.model.ConfigResponse
-import com.phsmk.id.takeaway_monitor.data.remote.model.PosConfigResponse
-import com.phsmk.id.takeaway_monitor.data.remote.model.AppVersionResponse
-import com.phsmk.id.takeaway_monitor.data.remote.model.MediaResponse
-import com.phsmk.id.takeaway_monitor.data.remote.model.OrdersResponse
-import com.phsmk.id.takeaway_monitor.data.remote.model.SystemTimeResponse
-import com.phsmk.id.takeaway_monitor.data.remote.model.CustomerQueueResponse
+import com.phsmk.id.takeaway_monitor.data.remote.model.*
+import io.reactivex.Single
+import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Query
+import retrofit2.http.Url
 
 interface ApiService {
     @GET("system/v1/config")
@@ -37,5 +34,12 @@ interface ApiService {
 
     @retrofit2.http.Streaming
     @GET
-    suspend fun downloadFile(@retrofit2.http.Url url: String): retrofit2.Response<okhttp3.ResponseBody>
+    suspend fun downloadFile(@Url url: String): Response<okhttp3.ResponseBody>
+
+    // RxJava methods for PushService
+    @GET("customer/customer_queue")
+    fun getCustomerQueueDetailRx(@Query("customer_queue_id") id: String): Single<Response<ResponseData<CustomerQueueData>>>
+
+    @GET("order/detail")
+    fun getOrderDetailRx(@Query("order_id") orderId: String, @Query("has_detail") hasDetail: String): Single<Response<OrderDetailResponse>>
 }

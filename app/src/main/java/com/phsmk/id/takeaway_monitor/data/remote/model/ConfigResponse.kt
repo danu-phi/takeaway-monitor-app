@@ -17,7 +17,9 @@ data class ConfigData(
     @SerializedName("footer_key") val footerKey: String?,
     @SerializedName("rounding") val rounding: String?,
     @SerializedName("group_by_pax") val listGroupByPax: List<List<Int>>? = null,
-    @SerializedName("isDisplayEmptyGroup") val isDisplayEmptyGroup: String? = null
+    @SerializedName("isDisplayEmptyGroup") val isDisplayEmptyGroup: String? = null,
+    @SerializedName("url_socket") val urlSocket: String? = null,
+    @SerializedName("isPHR") val isPHR: Boolean = false
 )
 
 data class AppIcon(

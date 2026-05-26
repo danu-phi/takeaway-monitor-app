@@ -67,6 +67,7 @@ class OrdersViewModel @Inject constructor(
     val uiState: StateFlow<OrdersUiState> = _uiState.asStateFlow()
 
     private var clockJob: Job? = null
+    private var allCustomerQueues = mutableListOf<CustomerQueueData>()
 
     init {
         val posConfig = preferenceManager.getPosConfig()
@@ -301,12 +302,49 @@ class OrdersViewModel @Inject constructor(
             try {
                 val response = apiService.getCustomerQueue()
                 response.data?.let { queueDataList ->
+                    allCustomerQueues = queueDataList.toMutableList()
                     _uiState.update { 
-                        it.copy(customerQueueItems = filterCustomerQueueForDisplay(queueDataList))
+                        it.copy(customerQueueItems = filterCustomerQueueForDisplay(allCustomerQueues))
                     }
                 }
             } catch (e: Exception) {
                 Log.e("OrdersViewModel", "Error fetching customer queue: ${e.message}")
+            }
+        }
+    }
+
+    fun onOrderReceived(action: String, orderDetail: OrderedData) {
+        _uiState.update { state ->
+            val currentOrders = state.apiOrders.toMutableList()
+            val index = currentOrders.indexOfFirst { it.id == orderDetail.id }
+            if (index != -1) {
+                currentOrders[index] = orderDetail
+            } else {
+                currentOrders.add(0, orderDetail)
+            }
+            // Re-apply order numbers
+            currentOrders.forEachIndexed { i, data -> data.orderNo = i + 1 }
+            state.copy(apiOrders = currentOrders)
+        }
+    }
+
+    fun onCustomerQueueReceived(action: String, queueData: CustomerQueueData) {
+        val index = allCustomerQueues.indexOfFirst { it.id == queueData.id }
+        if (index != -1) {
+            allCustomerQueues[index] = queueData
+        } else {
+            allCustomerQueues.add(0, queueData)
+        }
+        _uiState.update { 
+            it.copy(customerQueueItems = filterCustomerQueueForDisplay(allCustomerQueues))
+        }
+    }
+
+    fun onCustomerQueueDeleted(id: Int) {
+        val removed = allCustomerQueues.removeAll { it.id == id.toString() }
+        if (removed) {
+            _uiState.update { 
+                it.copy(customerQueueItems = filterCustomerQueueForDisplay(allCustomerQueues))
             }
         }
     }
