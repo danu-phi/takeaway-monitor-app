@@ -3,6 +3,7 @@ package com.phsmk.id.takeaway_monitor.util
 import android.content.Context
 import android.content.pm.PackageManager
 import okhttp3.OkHttpClient
+import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -22,12 +23,25 @@ object Utils {
                     override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
                 }
             )
-            val sslContext = SSLContext.getInstance("SSL")
+            val sslContext = SSLContext.getInstance("TLS")
             sslContext.init(null, trustAllCerts, SecureRandom())
             val sslSocketFactory = sslContext.socketFactory
             val builder = OkHttpClient.Builder()
             builder.sslSocketFactory(sslSocketFactory, trustAllCerts[0] as X509TrustManager)
             builder.hostnameVerifier { _, _ -> true }
+            
+            val logging = okhttp3.logging.HttpLoggingInterceptor { message ->
+                Timber.tag("OkHttpSocket").d(message)
+            }
+            logging.level = okhttp3.logging.HttpLoggingInterceptor.Level.HEADERS
+            builder.addInterceptor(logging)
+
+            builder.addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .addHeader("User-Agent", "Mozilla/5.0 (Android)")
+                    .build()
+                chain.proceed(request)
+            }
             builder.build()
         } catch (e: Exception) {
             throw RuntimeException(e)

@@ -15,7 +15,8 @@
         android:roundIcon="@drawable/logo_pizzahut"
         android:supportsRtl="true"
         android:theme="@style/Theme.TakeawayMonitor"
-        android:name=".TakeawayApp">
+        android:name=".TakeawayApp"
+        android:usesCleartextTraffic="true">
 
         <provider
             android:name="androidx.core.content.FileProvider"

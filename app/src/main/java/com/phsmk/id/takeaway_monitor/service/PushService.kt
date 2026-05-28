@@ -69,15 +69,31 @@ class PushService : Service() {
 
         if (intent != null) Timber.w(intent.toUri(0))
 
-        IO.setDefaultOkHttpCallFactory(Utils.getUnsafeOkHttpClient())
-        IO.setDefaultOkHttpWebSocketFactory(Utils.getUnsafeOkHttpClient())
+        val okHttpClient = Utils.getUnsafeOkHttpClient()
+        IO.setDefaultOkHttpCallFactory(okHttpClient)
+        IO.setDefaultOkHttpWebSocketFactory(okHttpClient)
 
-        val webSocketHost = PreferenceManager.instance.configData().urlSocket
+        val webSocketHost = PreferenceManager.instance.getPosConfig()?.urlSocket
+            ?.replace("ph_pos.phsmk.id", "ph-pos.phsmk.id")
         Timber.w("socket url: $webSocketHost")
 
         if (webSocketHost.isNullOrEmpty()) return START_NOT_STICKY
 
-        mSocket = IO.socket(webSocketHost)
+        val finalUrl = webSocketHost.trim()
+        val token = PreferenceManager.instance.userToken
+        Timber.w("Connecting to Socket: $finalUrl with token: $token")
+
+        val options = IO.Options().apply {
+            query = "token=$token"
+            callFactory = okHttpClient
+            webSocketFactory = okHttpClient
+            forceNew = true
+            reconnection = true
+            timeout = 60000
+            transports = arrayOf("websocket")
+        }
+
+        mSocket = IO.socket(finalUrl, options)
         mSocket?.let { socket ->
 
             socket.on(Socket.EVENT_CONNECT) {
@@ -123,7 +139,20 @@ class PushService : Service() {
 
                 onReceiveSocket(SOCKET_RECEIVED_EVENT_DELETE_QUEUE, it)
             }.on(Socket.EVENT_CONNECT_ERROR) {
-                Timber.w("EVENT_CONNECT_ERROR")
+                if (it != null && it.isNotEmpty()) {
+                    val error = it[0]
+                    if (error is Exception) {
+                        Timber.e(error, "Socket Connect Error: ${error.message}")
+                        error.cause?.let { cause -> Timber.e(cause, "Socket Connect Error Cause: ${cause.message}") }
+                        if (error is io.socket.engineio.client.EngineIOException) {
+                            Timber.e("EngineIOException code: ${error.code}")
+                        }
+                    } else {
+                        Timber.w("Socket Connect Error: $error")
+                    }
+                } else {
+                    Timber.w("EVENT_CONNECT_ERROR")
+                }
             }.on(Socket.EVENT_DISCONNECT) {
                 Timber.w("Socket disconnected!")
             }

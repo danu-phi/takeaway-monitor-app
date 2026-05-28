@@ -21,7 +21,9 @@ data class PosConfigData(
     @SerializedName("group_by_pax") val listGroupByPax: List<List<Int>>?,
     @SerializedName("store_type") val storeType: String?,
     @SerializedName("tax_rate") val taxRate: String?,
-    @SerializedName("is_display_empty_group") var isDisplayEmptyGroup: String?
+    @SerializedName("is_display_empty_group") var isDisplayEmptyGroup: String?,
+    @SerializedName("url_socket") val urlSocket: String? = null,
+@SerializedName("isPHR") val isPHR: Boolean = false
 )
 
 data class PosUI(
