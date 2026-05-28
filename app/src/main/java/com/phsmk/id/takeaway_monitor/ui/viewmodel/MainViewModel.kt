@@ -62,6 +62,9 @@ class MainViewModel @Inject constructor(
     private val _navigateToOrders = MutableSharedFlow<Unit>()
     val navigateToOrders: SharedFlow<Unit> = _navigateToOrders.asSharedFlow()
 
+    private val _startPushService = MutableSharedFlow<Unit>()
+    val startPushService: SharedFlow<Unit> = _startPushService.asSharedFlow()
+
     var urlDownload: String? = null
         private set
 
@@ -89,6 +92,7 @@ class MainViewModel @Inject constructor(
 
                 // If success, fetch app version
                 fetchAppVersion()
+                _startPushService.emit(Unit)
             } catch (e: Exception) {
                 e.printStackTrace()
                 _errorState.value = "Failed to load configs: ${e.message}"
@@ -137,9 +141,10 @@ class MainViewModel @Inject constructor(
             } else {
                 _isUpdateAvailable.value = false
                 val outletLogo = preferenceManager.getPosConfig()?.outletLogo
-                downloadlogo(outletLogo)
-                viewModelScope.launch {
-                    _navigateToOrders.emit(Unit)
+                downloadlogo(outletLogo) {
+                    viewModelScope.launch {
+                        _navigateToOrders.emit(Unit)
+                    }
                 }
                 return false
             }
@@ -150,8 +155,11 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    private fun downloadlogo(outletLogo: String?) {
-        if (outletLogo.isNullOrEmpty()) return
+    private fun downloadlogo(outletLogo: String?, onComplete: () -> Unit = {}) {
+        if (outletLogo.isNullOrEmpty()) {
+            onComplete()
+            return
+        }
         val fallbackUrl = if (outletLogo.contains("https://ph_posmanager")) {
             outletLogo.replace("https://ph_posmanager", "https://ph-posmanager")
         } else
@@ -173,6 +181,10 @@ class MainViewModel @Inject constructor(
             } catch (e: Exception) {
                 e.printStackTrace()
                 println("Error downloading logo: ${e.message}")
+            } finally {
+                withContext(Dispatchers.Main) {
+                    onComplete()
+                }
             }
         }
     }

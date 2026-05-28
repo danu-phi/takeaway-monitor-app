@@ -58,9 +58,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Start PushService
-        startService(Intent(this, PushService::class.java))
-
         setContent {
             TakeawayMonitorTheme {
                 Surface(
@@ -119,6 +116,12 @@ class MainActivity : ComponentActivity() {
 
                     LaunchedEffect(Unit) {
                         viewModel.fetchConfigs()
+                    }
+
+                    LaunchedEffect(Unit) {
+                        viewModel.startPushService.collectLatest {
+                            startService(Intent(this@MainActivity, PushService::class.java))
+                        }
                     }
 
                     LaunchedEffect(viewModel.navigateToOrders) {
