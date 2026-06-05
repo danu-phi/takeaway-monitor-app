@@ -50,6 +50,7 @@ import com.phsmk.id.takeaway_monitor.ui.viewmodel.OrdersViewModel
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance
 import com.phsmk.id.takeaway_monitor.ui.theme.TakeawayMonitorTheme
+import com.phsmk.id.takeaway_monitor.util.Constants
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -63,6 +64,9 @@ fun OrdersScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val versionName = remember { getVersion(context) }
+    val posConfig = remember(uiState) { com.phsmk.id.takeaway_monitor.data.local.PreferenceManager.instance.getPosConfig() }
+    val isPHR = posConfig?.isPHR() ?: false
+    val isShowTakeawayAds = posConfig?.isShowTakeawayAds() ?: false
 
     DisposableEffect(context) {
         val receiver = object : BroadcastReceiver() {
@@ -71,7 +75,9 @@ fun OrdersScreen(
                     PushService.ACTION_SEND_CREATED,
                     PushService.ACTION_SEND_UPDATED -> {
                         val orderDetail = intent.getParcelableExtra<OrderedData>(PushService.EXT_ORDER_DETAIL)
+                        if(orderDetail?.orderTypeId == Constants.ORDER_TYPE.DELIVERY || orderDetail?.orderTypeId == Constants.ORDER_TYPE.DINE_IN) return
                         orderDetail?.let { viewModel.onOrderReceived(intent.action!!, it) }
+//                        viewModel.fetchOrders(uiState.serverTime ?: Date())
                     }
                     PushService.ACTION_CUSTOMER_QUEUE_CREATED,
                     PushService.ACTION_CUSTOMER_QUEUE_UPDATED -> {
@@ -106,6 +112,8 @@ fun OrdersScreen(
         outletLogoPath = uiState.outletLogoPath,
         versionName = versionName,
         timeFetchError = uiState.timeFetchError,
+        isPHR = isPHR,
+        isShowTakeawayAds = isShowTakeawayAds,
         onDismissTimeError = { viewModel.dismissTimeError() },
         onConfirmTimeError = {
             viewModel.dismissTimeError()
@@ -123,6 +131,8 @@ fun OrdersScreenContent(
     outletLogoPath: String?,
     versionName: String,
     timeFetchError: String?,
+    isPHR: Boolean,
+    isShowTakeawayAds: Boolean,
     onDismissTimeError: () -> Unit,
     onConfirmTimeError: () -> Unit
 ) {
@@ -156,12 +166,12 @@ fun OrdersScreenContent(
             modifier = Modifier.fillMaxSize()
         ) {
             // Top Header Section
-            HeaderSection(headerBackground, serverTime, outletLogoPath)
+            HeaderSection(headerBackground, serverTime, outletLogoPath, isShowTakeawayAds)
 
             // Main Content Row
             val hasOrders = apiOrders.isNotEmpty()
             val hasQueue = customerQueueItems.isNotEmpty()
-            val showData = hasOrders || hasQueue
+            val showData = hasOrders || (hasQueue && !isShowTakeawayAds)
 
             Row(
                 modifier = Modifier
@@ -178,21 +188,26 @@ fun OrdersScreenContent(
                         ListHeaderRow("Customer", "Order Status")
                         ApiOrdersList(
                             orders = apiOrders,
+                            isPHR = isPHR,
                             modifier = Modifier.weight(1f)
                         )
                     }
 
-                    // 2. Customer Queue Section - Weight 1
+                    // 2. Right Side: Customer Queue or Ads
                     Column(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
                     ) {
-                        ListHeaderRow("Customer", null)
-                        CustomerQueueList(
-                            items = customerQueueItems,
-                            modifier = Modifier.weight(1f)
-                        )
+                        if (isShowTakeawayAds) {
+                            MediaSection(ads)
+                        } else {
+                            ListHeaderRow("Customer", null)
+                            CustomerQueueList(
+                                items = customerQueueItems,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
 
                         // Version display at bottom
                         Text(
@@ -218,7 +233,7 @@ fun OrdersScreenContent(
 }
 
 @Composable
-fun HeaderSection(backgroundColor: Color, serverTime: Date?, outletLogoPath: String?) {
+fun HeaderSection(backgroundColor: Color, serverTime: Date?, outletLogoPath: String?, isShowTakeawayAds: Boolean) {
     val displayTime = remember(serverTime) {
         val date = serverTime ?: Date()
         SimpleDateFormat("HH:mm", Locale.getDefault()).format(date)
@@ -257,25 +272,29 @@ fun HeaderSection(backgroundColor: Color, serverTime: Date?, outletLogoPath: Str
             }
 
             // Right Half: Waiting List
-            Box(
-                modifier = Modifier.weight(1f).fillMaxHeight(),
-                contentAlignment = Alignment.Center
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_waiting_list),
-                        contentDescription = null,
-                        tint = Color.Unspecified,
-                        modifier = Modifier.size(56.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = "WAITING LIST",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 22.sp
-                    )
+            if (!isShowTakeawayAds) {
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_waiting_list),
+                            contentDescription = null,
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(56.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "WAITING LIST",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 22.sp
+                        )
+                    }
                 }
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
             }
         }
 
@@ -379,28 +398,41 @@ fun QueueGroupHeader(title: String) {
 }
 
 @Composable
-fun ApiOrdersList(orders: List<OrderedData>, modifier: Modifier = Modifier) {
+fun ApiOrdersList(orders: List<OrderedData>, isPHR: Boolean, modifier: Modifier = Modifier) {
     LazyColumn(
         modifier = modifier.fillMaxWidth()
     ) {
         itemsIndexed(orders) { index, order ->
-            ApiOrderItem(order, index)
+            ApiOrderItem(order, index, isPHR)
         }
     }
 }
 
 @Composable
-fun ApiOrderItem(order: OrderedData, index: Int) {
+fun ApiOrderItem(order: OrderedData, index: Int, isPHR: Boolean) {
     val backgroundColor = if (index % 2 == 0) Color(0xCC333333) else Color.Transparent
+    val context = LocalContext.current
 
-    val statusText = when (order.orderStatusId) {
-        OrderStatusType.ORDERED.statusNumber -> "Received"
-        OrderStatusType.PICKEDUP.statusNumber,
-        OrderStatusType.FINISHED.statusNumber -> "Ready"
-        OrderStatusType.COOKING.statusNumber,
-        OrderStatusType.CHECKOUT.statusNumber,
-        OrderStatusType.COOKED.statusNumber -> "Cooking"
-        else -> OrderStatusType.statusOf(order.orderStatusId).toString()
+    val statusText = if (isPHR) {
+        when (order.orderStatusId) {
+            OrderStatusType.ORDERED.statusNumber -> context.getString(R.string.label_order_received)
+            OrderStatusType.PICKEDUP.statusNumber,
+            OrderStatusType.CHECKOUT.statusNumber,
+            OrderStatusType.FINISHED.statusNumber -> context.getString(R.string.label_order_ready)
+            OrderStatusType.COOKING.statusNumber,
+            OrderStatusType.COOKED.statusNumber -> context.getString(R.string.label_order_cooking)
+            else -> OrderStatusType.statusOf(order.orderStatusId).toString()
+        }
+    } else {
+        when (order.orderStatusId) {
+            OrderStatusType.ORDERED.statusNumber -> context.getString(R.string.label_order_received)
+            OrderStatusType.PICKEDUP.statusNumber,
+            OrderStatusType.FINISHED.statusNumber -> context.getString(R.string.label_order_ready)
+            OrderStatusType.COOKING.statusNumber,
+            OrderStatusType.CHECKOUT.statusNumber,
+            OrderStatusType.COOKED.statusNumber -> context.getString(R.string.label_order_cooking)
+            else -> OrderStatusType.statusOf(order.orderStatusId).toString()
+        }
     }
 
     val statusColor = when (order.orderStatusId) {
@@ -487,7 +519,7 @@ fun MediaSection(ads: List<Ad>) {
 
     LaunchedEffect(Unit) {
         while (true) {
-            delay(50000) // Auto scroll every 5 seconds
+            delay(5000) // Auto scroll every 5 seconds
             pagerState.animateScrollToPage(pagerState.currentPage + 1)
         }
     }
@@ -599,6 +631,8 @@ fun OrdersScreenPreview() {
             outletLogoPath = null,
             versionName = "2.0.5",
             timeFetchError = null,
+            isPHR = false,
+            isShowTakeawayAds = true,
             onDismissTimeError = {},
             onConfirmTimeError = {}
         )

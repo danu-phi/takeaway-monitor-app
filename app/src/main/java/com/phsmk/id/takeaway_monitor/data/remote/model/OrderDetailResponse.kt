@@ -6,5 +6,11 @@ import com.google.gson.annotations.SerializedName
 data class OrderDetailResponse(
     @SerializedName("data")
     @Expose
-    var order: Orders? = null
+    var data: OrderDetailData? = null
+)
+
+data class OrderDetailData(
+    @SerializedName("order")
+    @Expose
+    var order: OrderedData? = null
 )

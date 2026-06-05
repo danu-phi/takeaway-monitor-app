@@ -155,10 +155,12 @@ class OrdersViewModel @Inject constructor(
                 val response = apiService.getAdsMonitor()
                 response.data?.let { mediaData ->
 //                    _uiState.update { it.copy(ads = mediaData.ads) }
-                    
-                    // Start downloading medias
-                    downloadMedias(mediaData.ads)
-                    
+
+
+                    if (PreferenceManager.instance.getPosConfig()!!.isShowTakeawayAds()) {
+                        // Start downloading medias
+                        downloadMedias(mediaData.ads)
+                    }
                     val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
                     val timestamp = try {
                         mediaData.timestamp?.let { sdf.parse(it) }
@@ -177,7 +179,7 @@ class OrdersViewModel @Inject constructor(
         }
     }
 
-    fun fetchOrders(timestamp: Date) {
+    fun fetchOrders(timestamp: Date = Date()) {
         viewModelScope.launch {
             try {
                 val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
@@ -191,14 +193,19 @@ class OrdersViewModel @Inject constructor(
                     } catch (e: Exception) {
                         null
                     }
-                    
+
+                    val isCorrectType = it.orderTypeId == Constants.ORDER_TYPE.TAKEAWAY
+
                     if (updatedAt != null) {
                         val diffInSec = (timestamp.time - updatedAt.time) / 1000
-                        // FIVE_MINS_IN_SEC = 300
-                        !(diffInSec > 300 && (it.orderStatusId == OrderStatusType.CHECKOUT.statusNumber
-                                || it.orderStatusId == OrderStatusType.FINISHED.statusNumber))
+                        // Remove Ready order after 5 minutes (300 seconds)
+                        val isReadyStatus = it.orderStatusId == OrderStatusType.PICKEDUP.statusNumber ||
+                                it.orderStatusId == OrderStatusType.FINISHED.statusNumber ||
+                                it.orderStatusId == OrderStatusType.CHECKOUT.statusNumber
+
+                        isCorrectType && !(diffInSec > 300 && isReadyStatus)
                     } else {
-                        true
+                        isCorrectType
                     }
                 }
 
@@ -292,6 +299,7 @@ class OrdersViewModel @Inject constructor(
                 // Fetch customer queue every 10 seconds (adjust as needed)
                 if (counter % 10 == 0) {
                     fetchCustomerQueue()
+//                    fetchOrders(calendar.time)
                 }
             }
         }
@@ -356,11 +364,12 @@ class OrdersViewModel @Inject constructor(
     private fun filterCustomerQueueForDisplay(allQueue: List<CustomerQueueData>): List<CustomerQueueItem> {
         val result = mutableListOf<CustomerQueueItem>()
         val listItem = ArrayList(allQueue)
-        val config = preferenceManager.getPosConfig()
+        val config = preferenceManager.getPosConfig() ?: return allQueue.map { CustomerQueueItem.Order(it) }
+        val listGroupByPax = config.listGroupByPax
 
-        if (config?.listGroupByPax != null) {
+        if (listGroupByPax != null) {
             val listRemoveItem = ArrayList<CustomerQueueData>()
-            for (paxGroup in config.listGroupByPax) {
+            for (paxGroup in listGroupByPax) {
                 var limit = 2
                 result.add(CustomerQueueItem.Header(paxGroup.joinToString(separator = "-"), paxGroup))
                 for (item in listItem) {

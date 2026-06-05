@@ -234,9 +234,9 @@ class PushService : Service() {
                 .map {
                     if (it.isSuccessful) {
                         val orderResponse = it.body()
-                        val orderDetail = orderResponse?.order?.orderDetail?.get(0)
-                        if (orderDetail != null) {
-                            return@map orderDetail
+                        val orderData = orderResponse?.data?.order
+                        if (orderData != null) {
+                            return@map orderData
                         }
                     }
                     return@map OrderedData("Error")
