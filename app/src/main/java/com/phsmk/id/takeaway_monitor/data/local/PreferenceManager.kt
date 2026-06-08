@@ -83,4 +83,8 @@ class PreferenceManager @Inject constructor(
             null
         }
     }
+
+    fun clearAll() {
+        prefs.edit().clear().apply()
+    }
 }

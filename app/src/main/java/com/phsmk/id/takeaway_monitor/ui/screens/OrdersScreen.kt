@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.net.Uri
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.phsmk.id.takeaway_monitor.service.PushService
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -34,7 +35,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.DefaultLoadControl
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
@@ -55,6 +59,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun OrdersScreen(
@@ -154,20 +159,25 @@ fun OrdersScreenContent(
     val headerBackground = Color(0xCC333333) // item_order_monitor_trans
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Background Image
-        Image(
-            painter = painterResource(id = R.drawable.bg_pos),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
-        )
+        // Background: Ads or Static Image
+        if (isShowTakeawayAds && ads.isNotEmpty() && apiOrders.isEmpty()) {
+            MediaSection(ads)
+        } else {
+            Image(
+                painter = painterResource(id = R.drawable.bg_pos),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        }
 
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Top Header Section
-            HeaderSection(headerBackground, serverTime, outletLogoPath, isShowTakeawayAds)
-
+            // Top Header Section is now hidden when media is playing
+            if (!(isShowTakeawayAds && ads.isNotEmpty())) {
+                HeaderSection(headerBackground, serverTime, outletLogoPath, isShowTakeawayAds)
+            }
             // Main Content Row
             val hasOrders = apiOrders.isNotEmpty()
             val hasQueue = customerQueueItems.isNotEmpty()
@@ -193,41 +203,30 @@ fun OrdersScreenContent(
                         )
                     }
 
-                    // 2. Right Side: Customer Queue or Ads
+                    // 2. Right Side: Customer Queue (Only if NOT showing ads)
                     Column(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
                     ) {
-                        if (isShowTakeawayAds) {
-                            MediaSection(ads)
-                        } else {
+                        if (!isShowTakeawayAds) {
                             ListHeaderRow("Customer", null)
                             CustomerQueueList(
                                 items = customerQueueItems,
                                 modifier = Modifier.weight(1f)
                             )
                         }
-
-                        // Version display at bottom
-                        Text(
-                            text = "Version $versionName",
-                            color = Color.LightGray,
-                            fontSize = 12.sp,
-                            modifier = Modifier.padding(8.dp).align(Alignment.End)
-                        )
-                    }
-                } else if (ads.isNotEmpty()) {
-                    // 3. Media Section - Full Width (Weight 1)
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black)
-                    ) {
-                        MediaSection(ads)
                     }
                 }
             }
+
+            // Version display at bottom
+            Text(
+                text = "Version $versionName",
+                color = Color.LightGray,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(8.dp).align(Alignment.End)
+            )
         }
     }
 }
@@ -514,27 +513,40 @@ fun MediaSection(ads: List<Ad>) {
         return
     }
 
-    val pagerState = rememberPagerState(pageCount = { ads.size * 1000 }) // Large number for infinite-like scroll
+    val pagerState = rememberPagerState(pageCount = { ads.size * 1000 })
     val actualSize = ads.size
-
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(5000) // Auto scroll every 5 seconds
-            pagerState.animateScrollToPage(pagerState.currentPage + 1)
-        }
-    }
+    val coroutineScope = rememberCoroutineScope()
 
     HorizontalPager(
         state = pagerState,
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
+        beyondBoundsPageCount = 0
     ) { page ->
         val ad = ads[page % actualSize]
-        MediaItemDisplay(ad)
+
+        // Auto scroll for images
+        LaunchedEffect(pagerState.currentPage) {
+            if (page == pagerState.currentPage && ad.type != 1) {
+                delay(5000)
+                pagerState.animateScrollToPage(pagerState.currentPage + 1)
+            }
+        }
+
+        MediaItemDisplay(
+            ad = ad,
+            onVideoFinished = {
+                if (page == pagerState.currentPage) {
+                    coroutineScope.launch {
+                        pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                    }
+                }
+            }
+        )
     }
 }
 
 @Composable
-fun MediaItemDisplay(ad: Ad) {
+fun MediaItemDisplay(ad: Ad, onVideoFinished: () -> Unit) {
     Box(modifier = Modifier.fillMaxSize()) {
         when {
             ad.url.isYouTubeLink() -> {
@@ -545,17 +557,27 @@ fun MediaItemDisplay(ad: Ad) {
                 ) {
                     Text("YouTube Video", color = Color.White)
                 }
+                // YouTube placeholder, just skip after 5s
+                LaunchedEffect(Unit) {
+                    delay(5000)
+                    onVideoFinished()
+                }
             }
             ad.type == 1 -> { // Assuming 1 is video based on the JSON example
                 val videoPath = ad.localPath
                 if (videoPath != null && File(videoPath).exists()) {
-                    VideoPlayer(File(videoPath))
+                    VideoPlayer(File(videoPath), onFinished = onVideoFinished)
                 } else {
                     Box(
                         modifier = Modifier.fillMaxSize().background(Color.DarkGray),
                         contentAlignment = Alignment.Center
                     ) {
                         CircularProgressIndicator(color = Color.White)
+                    }
+                    // If file not found, skip after delay
+                    LaunchedEffect(Unit) {
+                        delay(3000)
+                        onVideoFinished()
                     }
                 }
             }
@@ -573,34 +595,61 @@ fun MediaItemDisplay(ad: Ad) {
     }
 }
 
+@androidx.annotation.OptIn(UnstableApi::class)
 @Composable
-fun VideoPlayer(file: File) {
+fun VideoPlayer(file: File, onFinished: () -> Unit) {
     val context = LocalContext.current
-    val exoPlayer = remember {
-        ExoPlayer.Builder(context).build().apply {
-            val mediaItem = MediaItem.fromUri(file.absolutePath)
-            setMediaItem(mediaItem)
-            prepare()
-            playWhenReady = true
-            repeatMode = ExoPlayer.REPEAT_MODE_ONE
-        }
+    
+    // Optimize memory by reducing buffer size for ads
+    val loadControl = remember {
+        DefaultLoadControl.Builder()
+            .setBufferDurationsMs(
+                5000,  // Min buffer
+                10000, // Max buffer
+                1500,  // Buffer for playback
+                2000   // Buffer for playback after rebuffer
+            )
+            .build()
     }
 
-    DisposableEffect(
-        AndroidView(
-            factory = {
-                PlayerView(context).apply {
-                    player = exoPlayer
-                    useController = false // Hide controls for monitor display
-                }
-            },
-            modifier = Modifier.fillMaxSize()
-        )
-    ) {
+    val exoPlayer = remember(file) {
+        ExoPlayer.Builder(context)
+            .setLoadControl(loadControl)
+            .build().apply {
+                val mediaItem = MediaItem.fromUri(Uri.fromFile(file).toString())
+                setMediaItem(mediaItem)
+                prepare()
+                playWhenReady = true
+                repeatMode = Player.REPEAT_MODE_OFF // Important: OFF so it can reach ENDED state
+                
+                addListener(object : Player.Listener {
+                    override fun onPlaybackStateChanged(playbackState: Int) {
+                        if (playbackState == Player.STATE_ENDED) {
+                            onFinished()
+                        }
+                    }
+                })
+            }
+    }
+
+    DisposableEffect(exoPlayer) {
         onDispose {
             exoPlayer.release()
         }
     }
+
+    AndroidView(
+        factory = {
+            PlayerView(context).apply {
+                player = exoPlayer
+                useController = false // Hide controls for monitor display
+            }
+        },
+        modifier = Modifier.fillMaxSize(),
+        update = {
+            it.player = exoPlayer
+        }
+    )
 }
 
 @Preview(showBackground = true, widthDp = 1280, heightDp = 800)

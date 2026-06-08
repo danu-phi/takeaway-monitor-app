@@ -10,6 +10,7 @@
 
     <application
         android:allowBackup="true"
+        android:largeHeap="true"
         android:icon="@drawable/logo_pizzahut"
         android:label="@string/app_name"
         android:roundIcon="@drawable/logo_pizzahut"

@@ -79,20 +79,25 @@ class PushService : Service() {
 
         if (webSocketHost.isNullOrEmpty()) return START_NOT_STICKY
 
-        val finalUrl = webSocketHost.trim()
+        var finalUrl = webSocketHost.trim()
+        if (!finalUrl.startsWith("http")) {
+            finalUrl = "https://$finalUrl"
+        }
+        
         val token = PreferenceManager.instance.userToken
         Timber.w("Connecting to Socket: $finalUrl with token: $token")
 
         val options = IO.Options().apply {
-            query = "token=$token"
+            query = if (token.isNullOrEmpty()) "" else "token=$token"
             callFactory = okHttpClient
             webSocketFactory = okHttpClient
             forceNew = true
             reconnection = true
             timeout = 60000
-            transports = arrayOf("websocket")
+            transports = arrayOf("polling", "websocket")
         }
 
+        mSocket?.disconnect()
         mSocket = IO.socket(finalUrl, options)
         mSocket?.let { socket ->
 
@@ -142,16 +147,16 @@ class PushService : Service() {
                 if (it != null && it.isNotEmpty()) {
                     val error = it[0]
                     if (error is Exception) {
-                        Timber.e(error, "Socket Connect Error: ${error.message}")
+                        Timber.e(error, "Socket Connect Error for $finalUrl: ${error.message}")
                         error.cause?.let { cause -> Timber.e(cause, "Socket Connect Error Cause: ${cause.message}") }
                         if (error is io.socket.engineio.client.EngineIOException) {
                             Timber.e("EngineIOException code: ${error.code}")
                         }
                     } else {
-                        Timber.w("Socket Connect Error: $error")
+                        Timber.w("Socket Connect Error for $finalUrl: $error")
                     }
                 } else {
-                    Timber.w("EVENT_CONNECT_ERROR")
+                    Timber.w("EVENT_CONNECT_ERROR for $finalUrl")
                 }
             }.on(Socket.EVENT_DISCONNECT) {
                 Timber.w("Socket disconnected!")
