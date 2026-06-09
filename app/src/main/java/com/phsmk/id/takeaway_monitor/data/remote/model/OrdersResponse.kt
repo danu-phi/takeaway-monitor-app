@@ -209,15 +209,6 @@ class OrderedData(
         return !TextUtils.isEmpty(isPaid) && isPaid?.toIntOrNull() == 1
     }
 
-    override fun equals(other: Any?): Boolean {
-        if (other is OrderedData) return this.id == other.id
-        return false
-    }
-
-    override fun hashCode(): Int {
-        return id?.hashCode() ?: 0
-    }
-
     constructor(source: Parcel) : this(
         source.readString(),
         source.readString(),

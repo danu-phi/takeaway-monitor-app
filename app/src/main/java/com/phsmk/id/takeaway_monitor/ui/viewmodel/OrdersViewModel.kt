@@ -68,6 +68,7 @@ class OrdersViewModel @Inject constructor(
 
     private var clockJob: Job? = null
     private var allCustomerQueues = mutableListOf<CustomerQueueData>()
+    private val orderRemovalJobs = mutableMapOf<String, Job>()
 
     init {
         val posConfig = preferenceManager.getPosConfig()
@@ -322,15 +323,43 @@ class OrdersViewModel @Inject constructor(
     }
 
     fun onOrderReceived(action: String, orderDetail: OrderedData) {
+        Log.d("OrdersViewModel", "onOrderReceived: customerName=${orderDetail.name}, orderStatusId=${orderDetail.orderStatusId}, orderStatusType=${OrderStatusType.statusOf(orderDetail.orderStatusId)}")
+        
+        val orderId = orderDetail.id ?: return
+
+        // Cancel existing timer for this order if any
+        orderRemovalJobs[orderId]?.cancel()
+
         _uiState.update { state ->
             val currentOrders = state.apiOrders.toMutableList()
-            val index = currentOrders.indexOfFirst { it.id == orderDetail.id }
+            val index = currentOrders.indexOfFirst { it.id == orderId }
             if (index != -1) {
                 currentOrders[index] = orderDetail
             } else {
                 currentOrders.add(0, orderDetail)
             }
             // Re-apply order numbers
+            currentOrders.forEachIndexed { i, data -> data.orderNo = i + 1 }
+            state.copy(apiOrders = currentOrders)
+        }
+
+        // Start 5-minute removal timer if status is Finished/Ready
+        val isReadyStatus = orderDetail.orderStatusId == OrderStatusType.FINISHED.statusNumber ||
+                orderDetail.orderStatusId == OrderStatusType.PICKEDUP.statusNumber ||
+                orderDetail.orderStatusId == OrderStatusType.CHECKOUT.statusNumber
+
+        if (isReadyStatus) {
+            orderRemovalJobs[orderId] = viewModelScope.launch {
+                delay(5 * 60 * 1000) // 5 minutes
+                removeOrder(orderId)
+                orderRemovalJobs.remove(orderId)
+            }
+        }
+    }
+
+    private fun removeOrder(orderId: String) {
+        _uiState.update { state ->
+            val currentOrders = state.apiOrders.filter { it.id != orderId }
             currentOrders.forEachIndexed { i, data -> data.orderNo = i + 1 }
             state.copy(apiOrders = currentOrders)
         }
@@ -426,6 +455,8 @@ class OrdersViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         clockJob?.cancel()
+        orderRemovalJobs.values.forEach { it.cancel() }
+        orderRemovalJobs.clear()
     }
 
     private fun applyFilters(

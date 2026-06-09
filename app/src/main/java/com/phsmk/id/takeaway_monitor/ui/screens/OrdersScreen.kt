@@ -158,9 +158,16 @@ fun OrdersScreenContent(
     // Background color based on bg_pos (approximated)
     val headerBackground = Color(0xCC333333) // item_order_monitor_trans
 
+    val hasOrders = apiOrders.isNotEmpty()
+    val hasQueue = customerQueueItems.size>4&&!isPHR
+    val isPlayingAds = isShowTakeawayAds && ads.isNotEmpty()
+
+    // Ads show full screen only if there's no data to display
+    val showAdsFull = isPlayingAds && !hasOrders && !hasQueue
+
     Box(modifier = Modifier.fillMaxSize()) {
         // Background: Ads or Static Image
-        if (isShowTakeawayAds && ads.isNotEmpty() && apiOrders.isEmpty()) {
+        if (showAdsFull) {
             MediaSection(ads)
         } else {
             Image(
@@ -174,21 +181,17 @@ fun OrdersScreenContent(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Top Header Section is now hidden when media is playing
-            if (!(isShowTakeawayAds && ads.isNotEmpty())) {
+            // Top Header Section is hidden when media is full screen
+            if (!showAdsFull) {
                 HeaderSection(headerBackground, serverTime, outletLogoPath, isShowTakeawayAds)
             }
             // Main Content Row
-            val hasOrders = apiOrders.isNotEmpty()
-            val hasQueue = customerQueueItems.isNotEmpty()
-            val showData = hasOrders || (hasQueue && !isShowTakeawayAds)
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-            ) {
-                if (showData) {
+            if (hasOrders || hasQueue) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) {
                     // 1. Orders Section (Takeaway Order) - Weight 1
                     Column(
                         modifier = Modifier
@@ -203,13 +206,15 @@ fun OrdersScreenContent(
                         )
                     }
 
-                    // 2. Right Side: Customer Queue (Only if NOT showing ads)
+                    // 2. Right Side: Ads (if orders present) or Customer Queue
                     Column(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
                     ) {
-                        if (!isShowTakeawayAds) {
+                        if (hasOrders && isPlayingAds) {
+                            MediaSection(ads)
+                        } else if (hasQueue) {
                             ListHeaderRow("Customer", null)
                             CustomerQueueList(
                                 items = customerQueueItems,
@@ -333,7 +338,15 @@ fun CustomerQueueList(items: List<CustomerQueueItem>, modifier: Modifier = Modif
         modifier = modifier.fillMaxWidth(),
         contentPadding = PaddingValues(0.dp)
     ) {
-        items(items.size) { index ->
+        items(
+            count = items.size,
+            key = { index ->
+                when (val item = items[index]) {
+                    is CustomerQueueItem.Header -> "header_${item.title}"
+                    is CustomerQueueItem.Order -> "order_${item.data.id}"
+                }
+            }
+        ) { index ->
             when (val item = items[index]) {
                 is CustomerQueueItem.Header -> {
                     QueueGroupHeader(item.title)
@@ -401,7 +414,7 @@ fun ApiOrdersList(orders: List<OrderedData>, isPHR: Boolean, modifier: Modifier 
     LazyColumn(
         modifier = modifier.fillMaxWidth()
     ) {
-        itemsIndexed(orders) { index, order ->
+        itemsIndexed(orders, key = { _, order -> order.id ?: UUID.randomUUID().toString() }) { index, order ->
             ApiOrderItem(order, index, isPHR)
         }
     }
