@@ -43,13 +43,13 @@ import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.phsmk.id.takeaway_monitor.R
+import com.phsmk.id.takeaway_monitor.BuildConfig
 import com.phsmk.id.takeaway_monitor.data.remote.model.Ad
 import com.phsmk.id.takeaway_monitor.data.remote.model.OrderedData
 import com.phsmk.id.takeaway_monitor.data.remote.model.CustomerQueueData
 import com.phsmk.id.takeaway_monitor.data.remote.model.OrderStatusType
 import com.phsmk.id.takeaway_monitor.util.Utils.isYouTubeLink
 import com.phsmk.id.takeaway_monitor.ui.viewmodel.CustomerQueueItem
-import com.phsmk.id.takeaway_monitor.util.Utils.getVersion
 import com.phsmk.id.takeaway_monitor.ui.viewmodel.OrdersViewModel
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance
@@ -68,7 +68,7 @@ fun OrdersScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-    val versionName = remember { getVersion(context) }
+    val versionName = BuildConfig.VERSION_NAME
     val posConfig = remember(uiState) { com.phsmk.id.takeaway_monitor.data.local.PreferenceManager.instance.getPosConfig() }
     val isPHR = posConfig?.isPHR() ?: false
     val isShowTakeawayAds = posConfig?.isShowTakeawayAds() ?: false
@@ -691,7 +691,7 @@ fun OrdersScreenPreview() {
             ads = sampleAds,
             serverTime = Date(),
             outletLogoPath = null,
-            versionName = "2.0.5",
+            versionName = BuildConfig.VERSION_NAME,
             timeFetchError = null,
             isPHR = false,
             isShowTakeawayAds = true,
