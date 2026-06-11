@@ -77,7 +77,9 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
 
     // Socket.io
-    implementation("io.socket:socket.io-client:1.0.2")
+    implementation("io.socket:socket.io-client:1.0.2") {
+        exclude(group = "org.json", module = "json")
+    }
 
     // RxJava
     implementation("io.reactivex.rxjava2:rxjava:2.2.21")
