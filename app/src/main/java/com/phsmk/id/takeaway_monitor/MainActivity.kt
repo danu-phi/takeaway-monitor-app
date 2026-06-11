@@ -149,16 +149,16 @@ class MainActivity : ComponentActivity() {
             }
 
             // Clear Cache & downloaded assets
-            try {
-                cacheDir.deleteRecursively()
-                externalCacheDir?.deleteRecursively()
-                
-                // Clear downloaded assets in filesDir (as they are essentially cache)
-                File(filesDir, "assets").deleteRecursively()
-                File(filesDir, "logos").deleteRecursively()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+//            try {
+//                cacheDir.deleteRecursively()
+//                externalCacheDir?.deleteRecursively()
+//
+//                // Clear downloaded assets in filesDir (as they are essentially cache)
+//                File(filesDir, "assets").deleteRecursively()
+//                File(filesDir, "logos").deleteRecursively()
+//            } catch (e: Exception) {
+//                e.printStackTrace()
+//            }
             
             // Stop PushService
             stopService(Intent(this, PushService::class.java))
