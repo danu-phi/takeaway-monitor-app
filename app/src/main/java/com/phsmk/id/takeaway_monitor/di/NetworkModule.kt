@@ -1,5 +1,6 @@
 package com.phsmk.id.takeaway_monitor.di
 
+import com.google.gson.Gson
 import com.phsmk.id.takeaway_monitor.data.remote.ApiService
 import dagger.Module
 import dagger.Provides
@@ -29,11 +30,15 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
+    fun provideGson(): Gson = Gson()
+
+    @Provides
+    @Singleton
+    fun provideRetrofit(okHttpClient: OkHttpClient, gson: Gson): Retrofit {
         return Retrofit.Builder()
             .baseUrl("https://ph-pos.phsmk.id/api/1/")
             .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
             .build()
     }

@@ -13,9 +13,13 @@ import com.phsmk.id.takeaway_monitor.data.remote.model.VersionData
 import com.phsmk.id.takeaway_monitor.util.Constants
 import com.phsmk.id.takeaway_monitor.util.StringUtil
 import com.phsmk.id.takeaway_monitor.util.Utils
+import com.phsmk.id.takeaway_monitor.util.NsdHelper
+import com.phsmk.id.takeaway_monitor.data.remote.WebSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -38,6 +42,8 @@ import javax.net.ssl.X509TrustManager
 class MainViewModel @Inject constructor(
     private val apiService: ApiService,
     private val preferenceManager: PreferenceManager,
+    private val nsdHelper: NsdHelper,
+    private val webSocketManager: WebSocketManager,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -77,18 +83,47 @@ class MainViewModel @Inject constructor(
     private val _errorState = MutableStateFlow<String?>(null)
     val errorState: StateFlow<String?> = _errorState
 
+    private var configTimeoutJob: Job? = null
+
+    init {
+        viewModelScope.launch {
+            webSocketManager.onConfigReceived.collect { response ->
+                configTimeoutJob?.cancel()
+                _posConfigState.value = response
+                preferenceManager.savePosConfig(response.data)
+                println("WebSocket: POS Config received and saved successfully")
+
+                fetchAppVersion()
+                _startPushService.emit(Unit)
+                _isFetching.value = false
+            }
+        }
+    }
+
     fun fetchConfigs() {
         if (_isFetching.value) return
         _isFetching.value = true
 //        _errorState.value = null
 
+        configTimeoutJob?.cancel()
+        configTimeoutJob = viewModelScope.launch {
+            startFindingServer()
+            delay(15000) // 15 seconds timeout
+            if (_isFetching.value) {
+                println("Config timeout: Falling back to REST API")
+                fetchConfigsRest()
+            }
+        }
+    }
+
+    private fun fetchConfigsRest() {
         viewModelScope.launch {
             try {
                 // Fetch second config (POS Config)
                 val response = apiService.getPosConfig()
                 _posConfigState.value = response
                 preferenceManager.savePosConfig(response.data)
-                println("POS Config loaded and saved successfully")
+                println("REST: POS Config loaded and saved successfully")
 
                 // If success, fetch app version
                 fetchAppVersion()
@@ -96,7 +131,6 @@ class MainViewModel @Inject constructor(
             } catch (e: Exception) {
                 e.printStackTrace()
                 _errorState.value = "Failed to load configs: ${e.message}"
-//                println("Failed to load configs: ${e.message}")
             } finally {
                 _isFetching.value = false
             }
@@ -123,6 +157,28 @@ class MainViewModel @Inject constructor(
 
     fun dismissError() {
         _errorState.value = null
+    }
+
+    fun startFindingServer() {
+        nsdHelper.discoverServices("_master-service._tcp.") { serviceInfo ->
+            // Logic when server is found via NSD
+            val host = serviceInfo.host.hostAddress
+            val port = serviceInfo.port
+            println("NSD: Server found at $host:8000")
+            
+            // Connect to WebSocket using discovered host
+            webSocketManager.connect("http://$host:8000")
+        }
+    }
+
+    fun stopFindingServer() {
+        nsdHelper.stopDiscovery()
+        webSocketManager.disconnect()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        stopFindingServer()
     }
 
     fun checkNewVersion(versionResponse: AppVersionResponse?): Boolean {
